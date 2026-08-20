@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.LocalizationProvider
 import com.example.model.*
 import com.example.ui.components.SimulationBadge
 import com.example.ui.theme.*
@@ -118,17 +119,33 @@ fun AiScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
+            val q1 = when (language) {
+                Language.HINDI -> "सुरक्षित निकास मार्ग?"
+                Language.MARATHI -> "सुरक्षित बाहेर पडण्याचा मार्ग?"
+                Language.ENGLISH -> "Safe Evac Route?"
+            }
+            val q2 = when (language) {
+                Language.HINDI -> "निकटतम अस्पताल?"
+                Language.MARATHI -> "जवळचे रुग्णालय?"
+                Language.ENGLISH -> "Nearest Hospital?"
+            }
+            val q3 = when (language) {
+                Language.HINDI -> "गोदावरी जल स्तर?"
+                Language.MARATHI -> "गोदावरी पूर पातळी?"
+                Language.ENGLISH -> "River Surge Level?"
+            }
+
             SuggestionChip(
-                label = "Safe Evac Route?",
-                onClick = { onSendMessage("What is the safest evacuation route right now?") }
+                label = q1,
+                onClick = { onSendMessage(if (language == Language.ENGLISH) "What is the safest evacuation route right now?" else q1) }
             )
             SuggestionChip(
-                label = "Nearest Hospital?",
-                onClick = { onSendMessage("Where is the nearest open hospital?") }
+                label = q2,
+                onClick = { onSendMessage(if (language == Language.ENGLISH) "Where is the nearest open hospital?" else q2) }
             )
             SuggestionChip(
-                label = "River Surge Level?",
-                onClick = { onSendMessage("What is the current flood water surge speed?") }
+                label = q3,
+                onClick = { onSendMessage(if (language == Language.ENGLISH) "What is the current flood water surge speed?" else q3) }
             )
         }
 
@@ -187,7 +204,16 @@ fun AiScreen(
                 OutlinedTextField(
                     value = inputQuery,
                     onValueChange = { inputQuery = it },
-                    placeholder = { Text("Ask RakshAI for disaster guidance...", fontSize = 13.sp) },
+                    placeholder = {
+                        Text(
+                            when (language) {
+                                Language.HINDI -> "आपदा मार्गदर्शन के लिए पूछें..."
+                                Language.MARATHI -> "आपत्ती मार्गदर्शनासाठी विचारा..."
+                                Language.ENGLISH -> "Ask RakshAI for disaster guidance..."
+                            },
+                            fontSize = 13.sp
+                        )
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -202,13 +228,12 @@ fun AiScreen(
                 IconButton(
                     onClick = {
                         if (inputQuery.isNotBlank()) {
-                            val text = inputQuery
+                            onSendMessage(inputQuery.trim())
                             inputQuery = ""
-                            onSendMessage(text)
                         }
                     },
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(46.dp)
                         .clip(CircleShape)
                         .background(GeoGreenPrimary)
                 ) {
@@ -225,32 +250,38 @@ fun AiScreen(
 }
 
 @Composable
-private fun AgentStatusBadge(name: String) {
+private fun AgentStatusBadge(agentName: String) {
     Surface(
-        shape = RoundedCornerShape(6.dp),
+        shape = RoundedCornerShape(8.dp),
         color = GeoDarkSurface
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(4.dp)
+                    .size(6.dp)
                     .clip(CircleShape)
                     .background(GeoGreenLight)
             )
             Text(
-                text = name,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, color = GeoDarkText)
+                text = agentName,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 9.sp,
+                    color = GeoDarkText
+                )
             )
         }
     }
 }
 
 @Composable
-private fun SuggestionChip(label: String, onClick: () -> Unit) {
+private fun SuggestionChip(
+    label: String,
+    onClick: () -> Unit
+) {
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
@@ -259,7 +290,10 @@ private fun SuggestionChip(label: String, onClick: () -> Unit) {
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 11.sp
+            ),
             color = GeoTextPrimary,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
         )
@@ -268,28 +302,34 @@ private fun SuggestionChip(label: String, onClick: () -> Unit) {
 
 @Composable
 private fun ChatBubble(message: ChatMessage) {
-    val isUser = message.isUser
+    val isUser = message.isUser || message.sender == "USER"
+    val isSystem = message.sender == "SYSTEM" || message.sender == "SYSTEM_ALERT"
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
         if (!isUser) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(GeoGreenPrimary),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(bottom = 2.dp, start = 4.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Security,
+                    imageVector = if (isSystem) Icons.Filled.Warning else Icons.Filled.SmartToy,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
+                    tint = if (isSystem) GeoRedCritical else GeoGreenPrimary,
+                    modifier = Modifier.size(12.dp)
+                )
+                Text(
+                    text = if (isSystem) "INCIDENT DISPATCH" else "RAKSHAI RESILIENCE AGENT",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 9.sp
+                    ),
+                    color = if (isSystem) GeoRedCritical else GeoGreenDark
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
         }
 
         Surface(
@@ -299,31 +339,31 @@ private fun ChatBubble(message: ChatMessage) {
                 bottomStart = if (isUser) 16.dp else 4.dp,
                 bottomEnd = if (isUser) 4.dp else 16.dp
             ),
-            color = if (isUser) GeoGreenPrimary else Color.White,
-            border = if (!isUser) androidx.compose.foundation.BorderStroke(1.dp, GeoBorder) else null,
-            modifier = Modifier.widthIn(max = 290.dp)
+            color = when {
+                isUser -> GeoGreenPrimary
+                isSystem -> GeoRedContainer
+                else -> Color.White
+            },
+            border = if (isUser) null else androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (isSystem) GeoRedBorder else GeoBorder
+            ),
+            shadowElevation = if (isUser) 0.dp else 1.dp,
+            modifier = Modifier.widthIn(max = 300.dp)
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                if (!isUser) {
-                    Text(
-                        text = "RakshAI Emergency Liaison",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp,
-                            color = GeoGreenPrimary
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                }
-
-                Text(
-                    text = message.text,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = if (isUser) Color.White else GeoTextPrimary,
-                        lineHeight = 18.sp
-                    )
-                )
-            }
+            Text(
+                text = message.text,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                ),
+                color = when {
+                    isUser -> Color.White
+                    isSystem -> GeoRedText
+                    else -> GeoTextPrimary
+                },
+                modifier = Modifier.padding(12.dp)
+            )
         }
     }
 }

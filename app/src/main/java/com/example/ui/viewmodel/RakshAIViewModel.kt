@@ -1,6 +1,10 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.speech.tts.TextToSpeech
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.DisasterRepository
@@ -9,14 +13,18 @@ import com.example.data.MultiAgentEngine
 import com.example.data.local.AppDatabase
 import com.example.data.local.SosEntity
 import com.example.model.*
+import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class RakshAIViewModel(application: Application) : AndroidViewModel(application) {
+class RakshAIViewModel(application: Application) : AndroidViewModel(application), TextToSpeech.OnInitListener {
 
     private val db = AppDatabase.getDatabase(application)
     private val sosDao = db.sosDao()
+
+    private var tts: TextToSpeech? = null
+    private var isTtsReady = false
 
     private val _language = MutableStateFlow(Language.ENGLISH)
     val language: StateFlow<Language> = _language.asStateFlow()
@@ -47,6 +55,29 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
 
     private val _facilities = MutableStateFlow(DisasterRepository.getInitialFacilities())
     val facilities: StateFlow<List<EmergencyFacility>> = _facilities.asStateFlow()
+
+    // Safe Places & Evacuation Navigation
+    private val _safePlaces = MutableStateFlow(DisasterRepository.getSafePlaces())
+    val safePlaces: StateFlow<List<SafePlace>> = _safePlaces.asStateFlow()
+
+    private val _selectedSafePlace = MutableStateFlow<SafePlace?>(DisasterRepository.getSafePlaces().first())
+    val selectedSafePlace: StateFlow<SafePlace?> = _selectedSafePlace.asStateFlow()
+
+    private val _navigationSteps = MutableStateFlow<List<SafeNavigationStep>>(emptyList())
+    val navigationSteps: StateFlow<List<SafeNavigationStep>> = _navigationSteps.asStateFlow()
+
+    private val _isNavigating = MutableStateFlow(false)
+    val isNavigating: StateFlow<Boolean> = _isNavigating.asStateFlow()
+
+    private val _isVoiceGuidanceActive = MutableStateFlow(true)
+    val isVoiceGuidanceActive: StateFlow<Boolean> = _isVoiceGuidanceActive.asStateFlow()
+
+    // Nashik CityLink Buses & 108 Ambulances Live Tracking
+    private val _emergencyVehicles = MutableStateFlow(DisasterRepository.getEmergencyVehicles(_userLat.value, _userLng.value))
+    val emergencyVehicles: StateFlow<List<EmergencyVehicle>> = _emergencyVehicles.asStateFlow()
+
+    private val _selectedVehicle = MutableStateFlow<EmergencyVehicle?>(null)
+    val selectedVehicle: StateFlow<EmergencyVehicle?> = _selectedVehicle.asStateFlow()
 
     private val _cascadingSteps = MutableStateFlow(DisasterRepository.getCascadingSteps(_currentScenario.value))
     val cascadingSteps: StateFlow<List<CascadingStep>> = _cascadingSteps.asStateFlow()
@@ -81,13 +112,64 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
     private val _isChatLoading = MutableStateFlow(false)
     val isChatLoading: StateFlow<Boolean> = _isChatLoading.asStateFlow()
 
-    private val _mapLayers = MutableStateFlow(setOf("HEATMAP", "HAZARDS", "HOSPITALS", "SHELTERS", "SAFE_ROUTE"))
+    private val _mapLayers = MutableStateFlow(setOf("HEATMAP", "HAZARDS", "SHELTERS", "HOSPITALS", "BUSES", "AMBULANCES", "SAFE_ROUTE"))
     val mapLayers: StateFlow<Set<String>> = _mapLayers.asStateFlow()
 
     init {
+        tts = TextToSpeech(application, this)
         recalculateAllMetrics()
         seedInitialSosAndChat()
         observeSosDatabase()
+        startLiveVehicleGpsSimulation()
+    }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            isTtsReady = true
+            setTtsLocale(_language.value)
+        }
+    }
+
+    private fun setTtsLocale(lang: Language) {
+        if (!isTtsReady) return
+        val loc = when (lang) {
+            Language.HINDI -> Locale("hi", "IN")
+            Language.MARATHI -> Locale("mr", "IN")
+            Language.ENGLISH -> Locale.ENGLISH
+        }
+        val result = tts?.setLanguage(loc)
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            tts?.setLanguage(Locale.ENGLISH)
+        }
+    }
+
+    fun speakText(text: String) {
+        if (_isVoiceGuidanceActive.value && isTtsReady) {
+            tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "RakshAiVoiceGuidance")
+        }
+    }
+
+    private fun startLiveVehicleGpsSimulation() {
+        viewModelScope.launch {
+            while (true) {
+                delay(4000) // Live vehicle movement updates every 4 seconds
+                val currentList = _emergencyVehicles.value
+                val updated = currentList.map { v ->
+                    val dLat = ((-10..10).random() / 100000.0)
+                    val dLng = ((-10..10).random() / 100000.0)
+                    val newLat = v.lat + dLat
+                    val newLng = v.lng + dLng
+                    val dist = DisasterRepository.calculateDistanceKm(_userLat.value, _userLng.value, newLat, newLng)
+                    v.copy(
+                        lat = newLat,
+                        lng = newLng,
+                        distanceKm = dist,
+                        speedKmH = (25..48).random()
+                    )
+                }.sortedBy { it.distanceKm }
+                _emergencyVehicles.value = updated
+            }
+        }
     }
 
     private fun observeSosDatabase() {
@@ -120,6 +202,7 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
 
     fun setLanguage(lang: Language) {
         _language.value = lang
+        setTtsLocale(lang)
     }
 
     fun setSelectedTab(tab: Int) {
@@ -136,6 +219,61 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
         _mapLayers.value = current
     }
 
+    fun selectSafePlace(place: SafePlace) {
+        _selectedSafePlace.value = place
+        if (_isNavigating.value) {
+            startNavigation(place)
+        }
+    }
+
+    fun startNavigation(place: SafePlace) {
+        _selectedSafePlace.value = place
+        _isNavigating.value = true
+        val steps = DisasterRepository.generateSafeNavigationRoute(_userLat.value, _userLng.value, place)
+        _navigationSteps.value = steps
+
+        val prompt = when (_language.value) {
+            Language.HINDI -> "सुरक्षित नेविगेशन प्रारंभ हुआ। कृपया ${place.nameHi} की ओर ऊँचे मार्ग का पालन करें।"
+            Language.MARATHI -> "सुरक्षित नेव्हिगेशन सुरू झाले आहे. कृपया ${place.nameMr} कडे जाणाऱ्या उंच रस्त्याचा वापर करा."
+            Language.ENGLISH -> "Safe escape navigation started towards ${place.name}. Follow high ground route."
+        }
+        speakText(prompt)
+    }
+
+    fun stopNavigation() {
+        _isNavigating.value = false
+        _navigationSteps.value = emptyList()
+        tts?.stop()
+    }
+
+    fun toggleVoiceGuidance() {
+        _isVoiceGuidanceActive.value = !_isVoiceGuidanceActive.value
+        if (!_isVoiceGuidanceActive.value) {
+            tts?.stop()
+        }
+    }
+
+    fun selectVehicle(vehicle: EmergencyVehicle?) {
+        _selectedVehicle.value = vehicle
+    }
+
+    fun launchExternalGoogleMaps(context: Context, destLat: Double, destLng: Double, name: String) {
+        try {
+            val uri = Uri.parse("google.navigation:q=$destLat,$destLng&mode=w")
+            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                setPackage("com.google.android.apps.maps")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            val fallbackUri = Uri.parse("geo:$destLat,$destLng?q=$destLat,$destLng($name)")
+            val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(fallbackIntent)
+        }
+    }
+
     fun selectScenario(scenario: DisasterScenario) {
         _currentScenario.value = scenario
         _hazardZones.value = DisasterRepository.getInitialHazardZones(scenario)
@@ -143,7 +281,6 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
         _impactFactors.value = DisasterRepository.calculateImpactFactors(scenario)
         _recommendations.value = DisasterRepository.getPrioritizedRecommendations(scenario)
         
-        // Slightly adapt user location near scenario
         when (scenario.id) {
             "scenario_trimbak_cloudburst" -> {
                 _userLat.value = 19.9390
@@ -163,20 +300,7 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
         }
 
         recalculateAllMetrics()
-        
-        // Add updated AI intelligence summary message
-        val updatedAiMsg = MultiAgentEngine.generateAssistantResponse(
-            query = "Scenario changed to ${scenario.title}",
-            scenario = scenario,
-            userLat = _userLat.value,
-            userLng = _userLng.value,
-            personalRiskScore = _personalRiskScore.value,
-            riskLevel = _personalRiskLevel.value,
-            nearestHospital = _facilities.value.firstOrNull { it.type == FacilityType.HOSPITAL },
-            nearestShelter = _facilities.value.firstOrNull { it.type == FacilityType.SHELTER },
-            language = _language.value
-        )
-        _chatMessages.value = _chatMessages.value + updatedAiMsg
+        _emergencyVehicles.value = DisasterRepository.getEmergencyVehicles(_userLat.value, _userLng.value)
     }
 
     fun runSimulation(
@@ -187,12 +311,9 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
     ) {
         viewModelScope.launch {
             _isSimulating.value = true
-            _simulationProgress.value = 0.1f
-
+            _simulationProgress.value = 0.2f
             delay(300)
-            _simulationProgress.value = 0.4f
-            delay(300)
-            _simulationProgress.value = 0.75f
+            _simulationProgress.value = 0.6f
             delay(300)
             _simulationProgress.value = 1.0f
 
@@ -211,7 +332,6 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
             _recommendations.value = DisasterRepository.getPrioritizedRecommendations(simulated)
             
             recalculateAllMetrics()
-
             _isSimulating.value = false
             _simulationProgress.value = 0f
         }
@@ -222,6 +342,12 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
         _userLng.value = lng
         locationName?.let { _userLocationName.value = it }
         recalculateAllMetrics()
+        _emergencyVehicles.value = DisasterRepository.getEmergencyVehicles(lat, lng)
+        _selectedSafePlace.value?.let {
+            if (_isNavigating.value) {
+                _navigationSteps.value = DisasterRepository.generateSafeNavigationRoute(lat, lng, it)
+            }
+        }
     }
 
     private fun recalculateAllMetrics() {
@@ -341,7 +467,7 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             _isChatLoading.value = true
-            delay(500) // Brief natural thinking cadence for multi-agent synthesis
+            delay(500)
 
             val botResponse = MultiAgentEngine.generateAssistantResponse(
                 query = userQuery,
@@ -358,5 +484,11 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
             _chatMessages.value = _chatMessages.value + botResponse
             _isChatLoading.value = false
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        tts?.stop()
+        tts?.shutdown()
     }
 }

@@ -49,6 +49,12 @@ fun HomeScreen(
     onNavigateToTab: (Int) -> Unit,
     onDispatchRecommendation: (String) -> Unit
 ) {
+    val scenarioTitle = when (language) {
+        Language.HINDI -> scenario.titleHi
+        Language.MARATHI -> scenario.titleMr
+        Language.ENGLISH -> scenario.title
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -57,12 +63,12 @@ fun HomeScreen(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 90.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        // 1. Personal Risk Score Banner (Geometric Pink/Red Container)
+        // 1. Personal Risk Score Banner
         item {
             GeometricRiskBanner(
                 personalRiskScore = personalRiskScore,
                 personalRiskLevel = personalRiskLevel,
-                scenarioTitle = scenario.title,
+                scenarioTitle = scenarioTitle,
                 nearestHazard = nearestHazardName,
                 language = language
             )
@@ -78,15 +84,15 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.LocationOn,
                     iconColor = GeoGreenPrimary,
-                    label = "GPS LOCATION",
+                    label = LocalizationProvider.get("gps_location", language),
                     value = userLocationName.split("(").first().trim()
                 )
                 GeometricInfoCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Filled.Warning,
                     iconColor = GeoRedCritical,
-                    label = "HAZARD DIST.",
-                    value = "%.1f km Away".format(nearestHazardDistanceKm)
+                    label = LocalizationProvider.get("hazard_dist", language),
+                    value = "%.1f km".format(nearestHazardDistanceKm)
                 )
             }
         }
@@ -95,6 +101,7 @@ fun HomeScreen(
         item {
             GeometricMapPreviewCard(
                 nearestHazard = nearestHazardName,
+                language = language,
                 onOpenMap = { onNavigateToTab(1) }
             )
         }
@@ -102,6 +109,7 @@ fun HomeScreen(
         // 4. Dark AI Guardian Recommendation Banner (#2F312C)
         item {
             GeometricAiGuardianBanner(
+                language = language,
                 onOpenAi = { onNavigateToTab(3) }
             )
         }
@@ -131,7 +139,7 @@ fun HomeScreen(
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "SEND SOS",
+                        text = LocalizationProvider.get("send_sos", language),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.ExtraBold,
                             letterSpacing = 1.sp
@@ -198,7 +206,7 @@ private fun GeometricRiskBanner(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "PERSONAL RISK SCORE",
+                    text = LocalizationProvider.get("personal_risk", language),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp,
@@ -210,8 +218,14 @@ private fun GeometricRiskBanner(
                     shape = RoundedCornerShape(12.dp),
                     color = GeoRedCritical
                 ) {
+                    val riskLevelLabel = when (personalRiskLevel) {
+                        RiskLevel.CRITICAL -> LocalizationProvider.get("critical", language)
+                        RiskLevel.HIGH -> LocalizationProvider.get("high", language)
+                        RiskLevel.MODERATE -> LocalizationProvider.get("moderate", language)
+                        RiskLevel.SAFE -> LocalizationProvider.get("safe_zone", language)
+                    }
                     Text(
-                        text = personalRiskLevel.label.uppercase(),
+                        text = riskLevelLabel.uppercase(),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 10.sp,
@@ -250,7 +264,7 @@ private fun GeometricRiskBanner(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "$scenarioTitle impact active. Elevated hazard exposure detected at your current coordinates near $nearestHazard.",
+                text = "$scenarioTitle ${LocalizationProvider.get("risk_score_desc", language)} $nearestHazard.",
                 style = MaterialTheme.typography.bodySmall.copy(
                     lineHeight = 16.sp
                 ),
@@ -313,6 +327,7 @@ private fun GeometricInfoCard(
 @Composable
 private fun GeometricMapPreviewCard(
     nearestHazard: String,
+    language: Language,
     onOpenMap: () -> Unit
 ) {
     Surface(
@@ -325,7 +340,6 @@ private fun GeometricMapPreviewCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, GeoBorder)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Subtle Radial Gradient for danger hazard overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -343,7 +357,7 @@ private fun GeometricMapPreviewCard(
                     .align(Alignment.TopStart)
                     .padding(12.dp)
             ) {
-                SimulationBadge("SIMULATION MAP")
+                SimulationBadge(LocalizationProvider.get("sim_badge", language))
             }
 
             // Bottom Floating Safe Route Pill
@@ -378,15 +392,20 @@ private fun GeometricMapPreviewCard(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "RECOMMENDED SAFE ROUTE",
+                            text = LocalizationProvider.get("safe_route_rec", language),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 9.sp
                             ),
                             color = GeoTextSecondary.copy(alpha = 0.7f)
                         )
+                        val safeSnippet = when (language) {
+                            Language.HINDI -> "केटीएचएम सुरक्षित ऊँचे क्षेत्र की ओर प्रस्थान करें"
+                            Language.MARATHI -> "केटीएचएम सुरक्षित उंच मदत छावणीकडे पुढे जा"
+                            Language.ENGLISH -> "Evacuate South-West towards KTHM High Ground"
+                        }
                         Text(
-                            text = "Evacuate South-West towards KTHM High Ground",
+                            text = safeSnippet,
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Bold
                             ),
@@ -409,8 +428,15 @@ private fun GeometricMapPreviewCard(
 
 @Composable
 private fun GeometricAiGuardianBanner(
+    language: Language,
     onOpenAi: () -> Unit
 ) {
+    val aiInsightText = when (language) {
+        Language.HINDI -> "\"गोदावरी जल स्तर +0.3मी/घंटे से बढ़ रहा है। 20 मिनट के भीतर ऊँचे आश्रय में जाएं।\""
+        Language.MARATHI -> "\"गोदावरी नदीची पाणी पातळी +०.३ मी/तास वाढत आहे. २० मिनिटांत उंच निवाऱ्याकडे जा.\""
+        Language.ENGLISH -> "\"Godavari river surge rate is +0.3m/hr. Move to elevated shelters within 20 mins.\""
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -441,7 +467,7 @@ private fun GeometricAiGuardianBanner(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "AI GUARDIAN INSIGHT",
+                    text = LocalizationProvider.get("ai_guardian_insight", language),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 10.sp,
@@ -450,7 +476,7 @@ private fun GeometricAiGuardianBanner(
                     color = GeoTextMuted
                 )
                 Text(
-                    text = "\"Godavari river surge rate is +0.3m/hr. Move to elevated shelters within 20 mins.\"",
+                    text = aiInsightText,
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontStyle = FontStyle.Italic,
                         fontSize = 12.sp
@@ -477,6 +503,12 @@ private fun GeometricScenarioCard(
     language: Language,
     onRunSimulation: () -> Unit
 ) {
+    val title = when (language) {
+        Language.HINDI -> scenario.titleHi
+        Language.MARATHI -> scenario.titleMr
+        Language.ENGLISH -> scenario.title
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -502,7 +534,7 @@ private fun GeometricScenarioCard(
                             .background(GeoGreenPrimary)
                     )
                     Text(
-                        text = "ACTIVE PROTOCOL",
+                        text = LocalizationProvider.get("active_protocol", language),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 10.sp,
@@ -513,7 +545,7 @@ private fun GeometricScenarioCard(
                 }
 
                 Text(
-                    text = "Epicenter: ${scenario.epicenterName}",
+                    text = "${scenario.epicenterName}",
                     style = MaterialTheme.typography.labelSmall,
                     color = GeoTextSecondary
                 )
@@ -522,7 +554,7 @@ private fun GeometricScenarioCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = scenario.title,
+                text = title,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = GeoTextPrimary
             )
@@ -542,10 +574,10 @@ private fun GeometricScenarioCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                MiniMetricPill("Rainfall", "${scenario.rainfallIntensityMmPerHour} mm/h")
-                MiniMetricPill("Surge", "+%.1f m".format(scenario.riverLevelChangeMeters))
-                MiniMetricPill("Exposed", "%,d".format(scenario.populationExposed))
-                MiniMetricPill("Severity", "${scenario.hazardSeverity}/100")
+                MiniMetricPill(LocalizationProvider.get("rainfall", language), "${scenario.rainfallIntensityMmPerHour} mm/h")
+                MiniMetricPill(LocalizationProvider.get("surge", language), "+%.1f m".format(scenario.riverLevelChangeMeters))
+                MiniMetricPill(LocalizationProvider.get("exposed", language), "%,d".format(scenario.populationExposed))
+                MiniMetricPill(LocalizationProvider.get("severity", language), "${scenario.hazardSeverity}/100")
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -575,7 +607,7 @@ private fun GeometricScenarioCard(
                     Icon(Icons.Filled.Science, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Calibrate Simulation Parameters",
+                        text = LocalizationProvider.get("calibrate_sim", language),
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                     )
                 }

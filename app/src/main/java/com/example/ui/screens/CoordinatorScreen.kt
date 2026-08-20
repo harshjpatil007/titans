@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.LocalizationProvider
 import com.example.model.*
 import com.example.ui.components.SimulationBadge
 import com.example.ui.theme.*
@@ -29,7 +30,8 @@ fun CoordinatorScreen(
     sosList: List<SosRecord>,
     onDispatchSos: (String) -> Unit,
     onResolveSos: (String) -> Unit,
-    onOpenSimulation: () -> Unit
+    onOpenSimulation: () -> Unit,
+    language: Language = Language.ENGLISH
 ) {
     var selectedFilter by remember { mutableStateOf<SosStatus?>(null) }
 
@@ -78,8 +80,11 @@ fun CoordinatorScreen(
                                 Icon(Icons.Filled.AdminPanelSettings, contentDescription = null, tint = GeoGreenLight, modifier = Modifier.size(18.dp))
                             }
                             Column {
-                                Text("Incident Command System", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = GeoDarkText))
-                                Text("Sector 4 Tactical Dispatch", style = MaterialTheme.typography.labelSmall, color = GeoTextMuted)
+                                Text(
+                                    text = LocalizationProvider.get("coordinator_dashboard", language),
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = GeoDarkText)
+                                )
+                                Text("Nashik Emergency Command & Dispatch", style = MaterialTheme.typography.labelSmall, color = GeoTextMuted)
                             }
                         }
 
@@ -93,9 +98,9 @@ fun CoordinatorScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        KpiTile("CRITICAL QUEUE", "$activeCount", GeoRedCritical, Modifier.weight(1f))
-                        KpiTile("DISPATCHED", "$dispatchedCount", GeoOrangeWarning, Modifier.weight(1f))
-                        KpiTile("RESOLVED", "$resolvedCount", GeoGreenLight, Modifier.weight(1f))
+                        KpiTile(LocalizationProvider.get("critical", language).uppercase(), "$activeCount", GeoRedCritical, Modifier.weight(1f))
+                        KpiTile(LocalizationProvider.get("dispatched", language).uppercase(), "$dispatchedCount", GeoOrangeWarning, Modifier.weight(1f))
+                        KpiTile(LocalizationProvider.get("mark_resolved", language).uppercase(), "$resolvedCount", GeoGreenLight, Modifier.weight(1f))
                     }
                 }
             }
@@ -107,10 +112,10 @@ fun CoordinatorScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                FilterPill("All (${sosList.size})", selectedFilter == null) { selectedFilter = null }
-                FilterPill("Active ($activeCount)", selectedFilter == SosStatus.ACTIVE) { selectedFilter = SosStatus.ACTIVE }
-                FilterPill("Dispatched ($dispatchedCount)", selectedFilter == SosStatus.DISPATCHED) { selectedFilter = SosStatus.DISPATCHED }
-                FilterPill("Resolved ($resolvedCount)", selectedFilter == SosStatus.RESOLVED) { selectedFilter = SosStatus.RESOLVED }
+                FilterPill("${LocalizationProvider.get("filter_all", language)} (${sosList.size})", selectedFilter == null) { selectedFilter = null }
+                FilterPill("${LocalizationProvider.get("critical", language)} ($activeCount)", selectedFilter == SosStatus.ACTIVE) { selectedFilter = SosStatus.ACTIVE }
+                FilterPill("${LocalizationProvider.get("dispatched", language)} ($dispatchedCount)", selectedFilter == SosStatus.DISPATCHED) { selectedFilter = SosStatus.DISPATCHED }
+                FilterPill("${LocalizationProvider.get("mark_resolved", language)} ($resolvedCount)", selectedFilter == SosStatus.RESOLVED) { selectedFilter = SosStatus.RESOLVED }
             }
         }
 
@@ -118,6 +123,7 @@ fun CoordinatorScreen(
         items(filteredList) { sos ->
             SosTriageCard(
                 sos = sos,
+                language = language,
                 onDispatch = { onDispatchSos(sos.id) },
                 onResolve = { onResolveSos(sos.id) }
             )
@@ -183,6 +189,7 @@ private fun FilterPill(label: String, isSelected: Boolean, onClick: () -> Unit) 
 @Composable
 private fun SosTriageCard(
     sos: SosRecord,
+    language: Language,
     onDispatch: () -> Unit,
     onResolve: () -> Unit
 ) {
@@ -250,7 +257,7 @@ private fun SosTriageCard(
                     ) {
                         Icon(Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Dispatch NDRF Unit", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(LocalizationProvider.get("dispatch_unit", language), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 } else if (sos.status == SosStatus.DISPATCHED) {
                     Button(
@@ -261,7 +268,7 @@ private fun SosTriageCard(
                     ) {
                         Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Mark Evacuation Resolved", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(LocalizationProvider.get("mark_resolved", language), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 } else {
                     Surface(

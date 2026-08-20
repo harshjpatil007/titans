@@ -45,6 +45,13 @@ class MainActivity : ComponentActivity() {
                 val simulationProgress by viewModel.simulationProgress.collectAsState()
                 val hazardZones by viewModel.hazardZones.collectAsState()
                 val facilities by viewModel.facilities.collectAsState()
+                val safePlaces by viewModel.safePlaces.collectAsState()
+                val selectedSafePlace by viewModel.selectedSafePlace.collectAsState()
+                val navigationSteps by viewModel.navigationSteps.collectAsState()
+                val isNavigating by viewModel.isNavigating.collectAsState()
+                val isVoiceGuidanceActive by viewModel.isVoiceGuidanceActive.collectAsState()
+                val emergencyVehicles by viewModel.emergencyVehicles.collectAsState()
+                val selectedVehicle by viewModel.selectedVehicle.collectAsState()
                 val activeSos by viewModel.activeUserSos.collectAsState()
                 val coordinatorSosList by viewModel.coordinatorSosList.collectAsState()
                 val chatMessages by viewModel.chatMessages.collectAsState()
@@ -107,8 +114,23 @@ class MainActivity : ComponentActivity() {
                                 userLocationName = userLocationName,
                                 hazardZones = hazardZones,
                                 facilities = facilities,
+                                safePlaces = safePlaces,
+                                selectedSafePlace = selectedSafePlace,
+                                navigationSteps = navigationSteps,
+                                isNavigating = isNavigating,
+                                isVoiceGuidanceActive = isVoiceGuidanceActive,
+                                emergencyVehicles = emergencyVehicles,
+                                selectedVehicle = selectedVehicle,
                                 activeLayers = mapLayers,
                                 onToggleLayer = { viewModel.toggleMapLayer(it) },
+                                onSelectSafePlace = { viewModel.selectSafePlace(it) },
+                                onStartNavigation = { viewModel.startNavigation(it) },
+                                onStopNavigation = { viewModel.stopNavigation() },
+                                onToggleVoiceGuidance = { viewModel.toggleVoiceGuidance() },
+                                onSelectVehicle = { viewModel.selectVehicle(it) },
+                                onOpenGoogleMaps = { ctx, lat, lng, name ->
+                                    viewModel.launchExternalGoogleMaps(ctx, lat, lng, name)
+                                },
                                 onSimulateRelocate = { lat, lng, name ->
                                     viewModel.updateLocation(lat, lng, name)
                                 },
@@ -138,7 +160,8 @@ class MainActivity : ComponentActivity() {
                                 sosList = coordinatorSosList,
                                 onDispatchSos = { viewModel.dispatchSos(it) },
                                 onResolveSos = { viewModel.resolveSos(it) },
-                                onOpenSimulation = { showSimulationDialog = true }
+                                onOpenSimulation = { showSimulationDialog = true },
+                                language = language
                             )
                         }
 

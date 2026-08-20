@@ -574,6 +574,236 @@ object DisasterRepository {
         )
     )
 
+    fun getSafePlaces(): List<SafePlace> = listOf(
+        SafePlace(
+            id = "sp_1",
+            name = "KTHM College Elevated Relief Campus",
+            nameHi = "केटीएचएम कॉलेज उच्च राहत शिविर",
+            nameMr = "केटीएचएम कॉलेज उंच मदत छावणी",
+            type = FacilityType.SHELTER,
+            lat = 20.0110,
+            lng = 73.7740,
+            capacityBeds = 2200,
+            availableBeds = 840,
+            distanceKm = 1.1,
+            address = "Gangapur Road, Near Old CBS, Nashik",
+            safeZoneElevationMeters = 615,
+            contactNumber = "+91 253 257 1376"
+        ),
+        SafePlace(
+            id = "sp_2",
+            name = "Shivaji Nagar Disaster Evacuation Center",
+            nameHi = "शिवाजी नगर आपदा निकासी केंद्र",
+            nameMr = "शिवाजी नगर आपत्ती निवारण केंद्र",
+            type = FacilityType.SHELTER,
+            lat = 20.0045,
+            lng = 73.7710,
+            capacityBeds = 1500,
+            availableBeds = 520,
+            distanceKm = 0.9,
+            address = "Municipal School 14, Shivaji Nagar",
+            safeZoneElevationMeters = 608,
+            contactNumber = "1077 (Disaster Cell)"
+        ),
+        SafePlace(
+            id = "sp_3",
+            name = "Mahatma Nagar Indoor Sports Haven",
+            nameHi = "महात्मा नगर इनडोर स्पोर्ट्स शेल्टर",
+            nameMr = "महात्मा नगर इनडोअर स्पोर्ट्स शेल्टर",
+            type = FacilityType.SHELTER,
+            lat = 19.9890,
+            lng = 73.7980,
+            capacityBeds = 3000,
+            availableBeds = 1450,
+            distanceKm = 2.1,
+            address = "Mahatma Nagar Ground, Sector 12",
+            safeZoneElevationMeters = 622,
+            contactNumber = "0253-222211"
+        ),
+        SafePlace(
+            id = "sp_4",
+            name = "Nashik District Civil Hospital Safe Wing",
+            nameHi = "नासिक जिला सिविल अस्पताल सुरक्षित विंग",
+            nameMr = "नाशिक जिल्हा शासकीय रुग्णालय सुरक्षित विभाग",
+            type = FacilityType.HOSPITAL,
+            lat = 19.9982,
+            lng = 73.7845,
+            capacityBeds = 450,
+            availableBeds = 68,
+            distanceKm = 1.4,
+            address = "Trimbak Road, Old Agra Highway",
+            safeZoneElevationMeters = 602,
+            contactNumber = "+91 253 257 2341"
+        ),
+        SafePlace(
+            id = "sp_5",
+            name = "CIDCO Elevated High Ground Haven",
+            nameHi = "सिडको उच्च सुरक्षित आश्रय स्थल",
+            nameMr = "सिडको उंच सुरक्षित निवारा केंद्र",
+            type = FacilityType.SHELTER,
+            lat = 19.9700,
+            lng = 73.7600,
+            capacityBeds = 4000,
+            availableBeds = 2100,
+            distanceKm = 3.2,
+            address = "Pawan Nagar Stadium, CIDCO",
+            safeZoneElevationMeters = 635,
+            contactNumber = "0253-239100"
+        )
+    )
+
+    fun getEmergencyVehicles(userLat: Double, userLng: Double): List<EmergencyVehicle> {
+        val baseVehicles = listOf(
+            EmergencyVehicle(
+                id = "veh_bus_108",
+                vehicleNumber = "MH-15-EV-4012",
+                type = VehicleType.CITYLINK_BUS,
+                routeName = "CityLink Line 108: CBS ↔ Gangapur Evacuation",
+                routeNameHi = "सिटीलिंक रूट 108: सीबीएस ↔ गंगापुर राहत सेवा",
+                routeNameMr = "सिटीलिंक मार्ग 108: सीबीएस ↔ गंगापूर मदत फेरी",
+                lat = userLat + 0.0035,
+                lng = userLng - 0.0042,
+                speedKmH = 34,
+                capacity = 52,
+                availableSeats = 28,
+                destination = "KTHM College Shelter",
+                destinationHi = "केटीएचएम कॉलेज आश्रय",
+                destinationMr = "केटीएचएम कॉलेज निवारा",
+                driverContact = "+91 94222 55108",
+                isEvacuating = true
+            ),
+            EmergencyVehicle(
+                id = "veh_bus_204",
+                vehicleNumber = "MH-15-EV-8821",
+                type = VehicleType.CITYLINK_BUS,
+                routeName = "CityLink Line 204: Shalimar ↔ Shivaji Nagar High Ground",
+                routeNameHi = "सिटीलिंक रूट 204: शालीमार ↔ शिवाजी नगर ऊँचा मार्ग",
+                routeNameMr = "सिटीलिंक मार्ग 204: शालीमार ↔ शिवाजी नगर उंच रस्ता",
+                lat = userLat - 0.0051,
+                lng = userLng + 0.0038,
+                speedKmH = 28,
+                capacity = 52,
+                availableSeats = 19,
+                destination = "Shivaji Nagar Evac Camp",
+                destinationHi = "शिवाजी नगर निकासी शिविर",
+                destinationMr = "शिवाजी नगर मदत छावणी",
+                driverContact = "+91 98220 11204",
+                isEvacuating = true
+            ),
+            EmergencyVehicle(
+                id = "veh_amb_1",
+                vehicleNumber = "MH-15-AMB-1081",
+                type = VehicleType.AMBULANCE,
+                routeName = "108 Advanced Life Support (ALS Unit 7)",
+                routeNameHi = "108 एडवांस्ड लाइफ सपोर्ट एम्बुलेंस #7",
+                routeNameMr = "१०८ अद्ययावत अतिदक्षता रुग्णवाहिका #७",
+                lat = userLat + 0.0022,
+                lng = userLng + 0.0031,
+                speedKmH = 45,
+                capacity = 4,
+                availableSeats = 2,
+                destination = "Civil Hospital Trauma Wing",
+                destinationHi = "सिविल अस्पताल ट्रॉमा विंग",
+                destinationMr = "जिल्हा रुग्णालय अतिदक्षता विभाग",
+                driverContact = "108 (Dispatched by Dr. Deshmukh)",
+                isEvacuating = true
+            ),
+            EmergencyVehicle(
+                id = "veh_amb_2",
+                vehicleNumber = "MH-15-AMB-1084",
+                type = VehicleType.AMBULANCE,
+                routeName = "108 Paramedic First Responder #4",
+                routeNameHi = "108 पैरामेडिक आपातकालीन एम्बुलेंस #4",
+                routeNameMr = "१०८ पॅरामेडिक आपत्कालीन रुग्णवाहिका #४",
+                lat = userLat - 0.0038,
+                lng = userLng - 0.0049,
+                speedKmH = 40,
+                capacity = 4,
+                availableSeats = 3,
+                destination = "KEM Multi-Specialty Disaster Ward",
+                destinationHi = "केईएम अस्पताल आपदा वार्ड",
+                destinationMr = "केईएम आपत्ती कक्ष",
+                driverContact = "108 (Paramedic Unit)",
+                isEvacuating = true
+            ),
+            EmergencyVehicle(
+                id = "veh_bus_101",
+                vehicleNumber = "MH-15-EV-1019",
+                type = VehicleType.CITYLINK_BUS,
+                routeName = "CityLink Line 101: Nimani ↔ CIDCO High Plateau",
+                routeNameHi = "सिटीलिंक रूट 101: निमानी ↔ सिडको सुरक्षित पठार",
+                routeNameMr = "सिटीलिंक मार्ग 101: निमाणी ↔ सिडको सुरक्षित पठार",
+                lat = userLat + 0.0075,
+                lng = userLng - 0.0080,
+                speedKmH = 32,
+                capacity = 52,
+                availableSeats = 35,
+                destination = "CIDCO Stadium Haven",
+                destinationHi = "सिडको स्टेडियम आश्रय",
+                destinationMr = "सिडको स्टेडियम निवारा",
+                driverContact = "+91 97655 44101",
+                isEvacuating = true
+            )
+        )
+
+        return baseVehicles.map { v ->
+            val dist = calculateDistanceKm(userLat, userLng, v.lat, v.lng)
+            v.copy(distanceKm = dist)
+        }.sortedBy { it.distanceKm }
+    }
+
+    fun generateSafeNavigationRoute(
+        startLat: Double,
+        startLng: Double,
+        destination: SafePlace
+    ): List<SafeNavigationStep> {
+        val totalDistanceKm = calculateDistanceKm(startLat, startLng, destination.lat, destination.lng)
+        val dMeters = (totalDistanceKm * 1000).toInt()
+
+        return listOf(
+            SafeNavigationStep(
+                stepNumber = 1,
+                instructionEn = "Head away from riverbank towards High Street (Elevated Corridor).",
+                instructionHi = "नदी के किनारे से दूर मुख्य सड़क (ऊँचे मार्ग) की ओर आगे बढ़ें।",
+                instructionMr = "नदीच्या काठापासून दूर मुख्य उंच रस्त्याच्या दिशेने पुढे चला.",
+                distanceMeters = minOf(150, (dMeters * 0.15).toInt()),
+                turnType = "STRAIGHT",
+                lat = startLat + 0.001,
+                lng = startLng - 0.001
+            ),
+            SafeNavigationStep(
+                stepNumber = 2,
+                instructionEn = "Turn RIGHT onto the Elevated Flyover Bypass. Avoid low-lying underpass.",
+                instructionHi = "ऊँचे फ्लाईओवर बाईपास पर दाएँ मुड़ें। निचले अंडरपास से बचें।",
+                instructionMr = "उंच पुलाच्या रस्त्याकडे उजवीकडे वळा. सखल रस्ता टाळा.",
+                distanceMeters = minOf(350, (dMeters * 0.35).toInt()),
+                turnType = "RIGHT",
+                lat = startLat + (destination.lat - startLat) * 0.4,
+                lng = startLng + (destination.lng - startLng) * 0.4
+            ),
+            SafeNavigationStep(
+                stepNumber = 3,
+                instructionEn = "Continue straight along Gangapur Ridge for ${(dMeters * 0.4).toInt()} meters. High ground safety index: 98%.",
+                instructionHi = "गंगापुर रिज पर सीधे ${(dMeters * 0.4).toInt()} मीटर चलें। ऊँचे क्षेत्र का सुरक्षा सूचकांक: 98%।",
+                instructionMr = "गंगापूर उंच रस्त्याने ${(dMeters * 0.4).toInt()} मीटर सरळ जा. सुरक्षितता निर्देशांक: ९८%.",
+                distanceMeters = (dMeters * 0.4).toInt(),
+                turnType = "ELEVATION",
+                lat = startLat + (destination.lat - startLat) * 0.7,
+                lng = startLng + (destination.lng - startLng) * 0.7
+            ),
+            SafeNavigationStep(
+                stepNumber = 4,
+                instructionEn = "Turn LEFT into ${destination.name}. Safe haven gate with triage & supplies ahead.",
+                instructionHi = "बाएँ मुड़कर ${destination.nameHi} में प्रवेश करें। सुरक्षित राहत केंद्र द्वार सामने है।",
+                instructionMr = "डावीकडे वळून ${destination.nameMr} मध्ये प्रवेश करा. सुरक्षित केंद्र समोर आहे.",
+                distanceMeters = minOf(100, (dMeters * 0.1).toInt()),
+                turnType = "DESTINATION",
+                lat = destination.lat,
+                lng = destination.lng
+            )
+        )
+    }
+
     fun calculateDistanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6371.0 // Earth radius in km
         val dLat = Math.toRadians(lat2 - lat1)

@@ -18,6 +18,58 @@ enum class FacilityType {
     SHELTER
 }
 
+enum class VehicleType {
+    CITYLINK_BUS,
+    AMBULANCE
+}
+
+data class EmergencyVehicle(
+    val id: String,
+    val vehicleNumber: String,
+    val type: VehicleType,
+    val routeName: String,
+    val routeNameHi: String,
+    val routeNameMr: String,
+    val lat: Double,
+    val lng: Double,
+    val speedKmH: Int,
+    val capacity: Int,
+    val availableSeats: Int,
+    val destination: String,
+    val destinationHi: String,
+    val destinationMr: String,
+    val driverContact: String,
+    val distanceKm: Double = 0.0,
+    val isEvacuating: Boolean = true
+)
+
+data class SafeNavigationStep(
+    val stepNumber: Int,
+    val instructionEn: String,
+    val instructionHi: String,
+    val instructionMr: String,
+    val distanceMeters: Int,
+    val turnType: String, // "STRAIGHT", "LEFT", "RIGHT", "DESTINATION", "ELEVATION"
+    val lat: Double,
+    val lng: Double
+)
+
+data class SafePlace(
+    val id: String,
+    val name: String,
+    val nameHi: String,
+    val nameMr: String,
+    val type: FacilityType,
+    val lat: Double,
+    val lng: Double,
+    val capacityBeds: Int,
+    val availableBeds: Int,
+    val distanceKm: Double,
+    val address: String,
+    val safeZoneElevationMeters: Int,
+    val contactNumber: String
+)
+
 enum class SosStatus {
     ACTIVE,
     DISPATCHED,

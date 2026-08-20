@@ -51,7 +51,6 @@ fun SosScreen(
             countdownSeconds = 3
             while (countdownSeconds > 0) {
                 delay(1000)
-                countdownSeconds -= 1
             }
             isCountingDown = false
             val needsStr = if (selectedNeeds.isEmpty()) "Standard Emergency Evacuation" else selectedNeeds.joinToString(", ")
@@ -71,12 +70,13 @@ fun SosScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        SimulationBadge("SIMULATION SOS PROTOCOL")
+        SimulationBadge(LocalizationProvider.get("sos_title", language))
 
         if (activeSos != null) {
             // ACTIVE SOS BEACON MONITOR
             ActiveSosTrackingCard(
                 sosRecord = activeSos,
+                language = language,
                 onCancel = onCancelSos,
                 onShowSms = { showSmsPayloadDialog = true }
             )
@@ -90,6 +90,7 @@ fun SosScreen(
                 userLng = userLng,
                 personalRiskScore = personalRiskScore,
                 selectedNeeds = selectedNeeds,
+                language = language,
                 onToggleNeed = { need ->
                     selectedNeeds = if (selectedNeeds.contains(need)) selectedNeeds - need else selectedNeeds + need
                 },
@@ -154,6 +155,7 @@ private fun SosTriggerInterface(
     userLng: Double,
     personalRiskScore: Int,
     selectedNeeds: Set<String>,
+    language: Language,
     onToggleNeed: (String) -> Unit,
     additionalNotes: String,
     onNotesChange: (String) -> Unit,
@@ -171,12 +173,12 @@ private fun SosTriggerInterface(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "EMERGENCY RESCUE BEACON",
+                text = LocalizationProvider.get("sos_title", language),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp),
                 color = GeoRedCritical
             )
             Text(
-                text = "Broadcasts your precise GPS location and triage profile to NDRF & Local Incident Commanders.",
+                text = LocalizationProvider.get("sos_subtitle", language),
                 style = MaterialTheme.typography.bodySmall,
                 color = GeoTextSecondary,
                 modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
@@ -209,11 +211,11 @@ private fun SosTriggerInterface(
                             style = MaterialTheme.typography.displayLarge.copy(fontSize = 54.sp, fontWeight = FontWeight.ExtraBold),
                             color = Color.White
                         )
-                        Text("Tap to Cancel", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                        Text(LocalizationProvider.get("tap_to_cancel", language), style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = Color.White)
                     } else {
                         Icon(Icons.Filled.Emergency, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp))
                         Text(
-                            text = "HOLD / TAP SOS",
+                            text = LocalizationProvider.get("send_sos", language),
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                             color = Color.White
                         )
@@ -225,7 +227,7 @@ private fun SosTriggerInterface(
 
             // Medical & Vulnerability Needs Checklist
             Text(
-                text = "SPECIAL MEDICAL / MOBILITY NEEDS",
+                text = LocalizationProvider.get("special_needs", language),
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = GeoTextSecondary),
                 modifier = Modifier.align(Alignment.Start)
             )
@@ -233,10 +235,10 @@ private fun SosTriggerInterface(
             Spacer(modifier = Modifier.height(8.dp))
 
             val needsList = listOf(
-                "Elderly / Infant" to Icons.Filled.Elderly,
-                "Wheelchair / Mobility" to Icons.Filled.Accessible,
-                "Oxygen / Medical Kit" to Icons.Filled.MedicalServices,
-                "Trapped in Inundation" to Icons.Filled.Flood
+                LocalizationProvider.get("need_elderly", language) to Icons.Filled.Elderly,
+                LocalizationProvider.get("need_wheelchair", language) to Icons.Filled.Accessible,
+                LocalizationProvider.get("need_oxygen", language) to Icons.Filled.MedicalServices,
+                LocalizationProvider.get("need_flooded", language) to Icons.Filled.Flood
             )
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -289,6 +291,7 @@ private fun SosTriggerInterface(
 @Composable
 private fun ActiveSosTrackingCard(
     sosRecord: SosRecord,
+    language: Language,
     onCancel: () -> Unit,
     onShowSms: () -> Unit
 ) {
@@ -309,15 +312,20 @@ private fun ActiveSosTrackingCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(GeoRedCritical))
-                    Text("BEACON BROADCASTING", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, color = GeoRedCritical))
+                    Text(LocalizationProvider.get("beacon_active", language), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold, color = GeoRedCritical))
                 }
 
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = if (sosRecord.status == SosStatus.DISPATCHED) GeoGreenPrimary else GeoOrangeWarning
                 ) {
+                    val statusLabel = when (sosRecord.status) {
+                        SosStatus.ACTIVE -> LocalizationProvider.get("critical", language)
+                        SosStatus.DISPATCHED -> LocalizationProvider.get("dispatched", language)
+                        SosStatus.RESOLVED -> LocalizationProvider.get("mark_resolved", language)
+                    }
                     Text(
-                        text = sosRecord.status.name,
+                        text = statusLabel.uppercase(),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Color.White),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
@@ -353,7 +361,7 @@ private fun ActiveSosTrackingCard(
                     shape = RoundedCornerShape(20.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = GeoRedCritical)
                 ) {
-                    Text("Cancel / I Am Safe", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(LocalizationProvider.get("cancel_safe", language), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
