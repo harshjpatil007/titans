@@ -8,6 +8,7 @@ import android.speech.tts.TextToSpeech
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.DisasterRepository
+import com.example.data.GeminiApiClient
 import com.example.data.LocalizationProvider
 import com.example.data.MultiAgentEngine
 import com.example.data.local.AppDatabase
@@ -475,19 +476,66 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             _isChatLoading.value = true
-            delay(500)
 
-            val botResponse = MultiAgentEngine.generateAssistantResponse(
-                query = userQuery,
-                scenario = _currentScenario.value,
-                userLat = _userLat.value,
-                userLng = _userLng.value,
-                personalRiskScore = _personalRiskScore.value,
-                riskLevel = _personalRiskLevel.value,
-                nearestHospital = _facilities.value.firstOrNull { it.type == FacilityType.HOSPITAL },
-                nearestShelter = _facilities.value.firstOrNull { it.type == FacilityType.SHELTER },
-                language = _language.value
-            )
+            // Try real-time Google Gemini API
+            val geminiResponseText = if (GeminiApiClient.isApiKeyConfigured()) {
+                GeminiApiClient.queryGemini(
+                    userQuery = userQuery,
+                    scenario = _currentScenario.value,
+                    userLat = _userLat.value,
+                    userLng = _userLng.value,
+                    userLocationName = _userLocationName.value,
+                    personalRiskScore = _personalRiskScore.value,
+                    riskLevel = _personalRiskLevel.value,
+                    nearestHospital = _facilities.value.firstOrNull { it.type == FacilityType.HOSPITAL },
+                    nearestShelter = _selectedSafePlace.value ?: _safePlaces.value.firstOrNull(),
+                    nearestHazard = _hazardZones.value.firstOrNull(),
+                    activeBusesCount = _emergencyVehicles.value.count { it.type == VehicleType.CITYLINK_BUS },
+                    language = _language.value
+                )
+            } else {
+                ""
+            }
+
+            val botResponse = if (geminiResponseText.isNotBlank()) {
+                val nearestHazards = DisasterRepository.getInitialHazardZones(_currentScenario.value)
+                val nearestHazard = nearestHazards.minByOrNull {
+                    DisasterRepository.calculateDistanceKm(_userLat.value, _userLng.value, it.lat, it.lng)
+                }
+                val insights = MultiAgentEngine.generateAgentInsights(
+                    scenario = _currentScenario.value,
+                    userLat = _userLat.value,
+                    userLng = _userLng.value,
+                    personalRiskScore = _personalRiskScore.value,
+                    riskLevel = _personalRiskLevel.value,
+                    nearestHazard = nearestHazard,
+                    nearestHospital = _facilities.value.firstOrNull { it.type == FacilityType.HOSPITAL },
+                    nearestShelter = _facilities.value.firstOrNull { it.type == FacilityType.SHELTER },
+                    language = _language.value
+                )
+                ChatMessage(
+                    id = "msg_${System.currentTimeMillis()}",
+                    sender = "RakshAI Gemini Intelligence (Live)",
+                    text = geminiResponseText,
+                    timestamp = System.currentTimeMillis(),
+                    isUser = false,
+                    isGeminiPowered = true,
+                    agentInsights = insights,
+                    recommendations = DisasterRepository.getPrioritizedRecommendations(_currentScenario.value)
+                )
+            } else {
+                MultiAgentEngine.generateAssistantResponse(
+                    query = userQuery,
+                    scenario = _currentScenario.value,
+                    userLat = _userLat.value,
+                    userLng = _userLng.value,
+                    personalRiskScore = _personalRiskScore.value,
+                    riskLevel = _personalRiskLevel.value,
+                    nearestHospital = _facilities.value.firstOrNull { it.type == FacilityType.HOSPITAL },
+                    nearestShelter = _facilities.value.firstOrNull { it.type == FacilityType.SHELTER },
+                    language = _language.value
+                )
+            }
 
             _chatMessages.value = _chatMessages.value + botResponse
             _isChatLoading.value = false

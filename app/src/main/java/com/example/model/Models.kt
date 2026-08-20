@@ -194,6 +194,7 @@ data class ChatMessage(
     val text: String,
     val timestamp: Long = System.currentTimeMillis(),
     val isUser: Boolean = false,
+    val isGeminiPowered: Boolean = false,
     val agentInsights: List<AgentInsight> = emptyList(),
     val recommendations: List<EmergencyRecommendation> = emptyList()
 )

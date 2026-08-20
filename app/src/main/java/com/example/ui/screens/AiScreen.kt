@@ -73,27 +73,46 @@ fun AiScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.SmartToy,
+                                imageVector = Icons.Filled.AutoAwesome,
                                 contentDescription = null,
                                 tint = GeoGreenLight,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
                         Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "Gemini Evacuation & Flood AI",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = GeoDarkText
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0xFF1E3A8A)
+                                ) {
+                                    Text(
+                                        text = "3.5 Flash",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = Color(0xFF93C5FD),
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
                             Text(
-                                text = "Multi-Agent Disaster Engine",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = GeoDarkText
-                            )
-                            Text(
-                                text = "5 Specialized Resilience Agents Active",
+                                text = "Real-Time Disaster Guidance • 5 Resilience Agents",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = GeoTextMuted
                             )
                         }
                     }
 
-                    SimulationBadge("AI CORE")
+                    SimulationBadge("AI ACTIVE")
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -316,18 +335,34 @@ private fun ChatBubble(message: ChatMessage) {
                 modifier = Modifier.padding(bottom = 2.dp, start = 4.dp)
             ) {
                 Icon(
-                    imageVector = if (isSystem) Icons.Filled.Warning else Icons.Filled.SmartToy,
+                    imageVector = when {
+                        isSystem -> Icons.Filled.Warning
+                        message.isGeminiPowered -> Icons.Filled.AutoAwesome
+                        else -> Icons.Filled.SmartToy
+                    },
                     contentDescription = null,
-                    tint = if (isSystem) GeoRedCritical else GeoGreenPrimary,
+                    tint = when {
+                        isSystem -> GeoRedCritical
+                        message.isGeminiPowered -> Color(0xFF2563EB)
+                        else -> GeoGreenPrimary
+                    },
                     modifier = Modifier.size(12.dp)
                 )
                 Text(
-                    text = if (isSystem) "INCIDENT DISPATCH" else "RAKSHAI RESILIENCE AGENT",
+                    text = when {
+                        isSystem -> "INCIDENT DISPATCH"
+                        message.isGeminiPowered -> "GOOGLE GEMINI 3.5 FLASH"
+                        else -> "RAKSHAI RESILIENCE AGENT"
+                    },
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         fontSize = 9.sp
                     ),
-                    color = if (isSystem) GeoRedCritical else GeoGreenDark
+                    color = when {
+                        isSystem -> GeoRedCritical
+                        message.isGeminiPowered -> Color(0xFF1D4ED8)
+                        else -> GeoGreenDark
+                    }
                 )
             }
         }
