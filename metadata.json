@@ -1,0 +1,7 @@
+{
+  "name": "RakshAI",
+  "description": "AI-powered disaster response and emergency intelligence platform with multi-agent orchestration, live GIS risk heatmaps, and cascading impact analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

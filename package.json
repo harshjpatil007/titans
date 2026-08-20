@@ -1,0 +1,14 @@
+{
+  "name": "rakshai-disaster-response",
+  "version": "1.0.0",
+  "description": "RakshAI - Autonomous Multi-Agent Emergency Intelligence & Disaster Response Platform",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "mkdir -p dist public && cp index.html dist/index.html && cp index.html public/index.html && cp 404.html dist/404.html && cp 404.html public/404.html && cp _redirects dist/_redirects && cp _redirects public/_redirects && touch dist/.nojekyll public/.nojekyll",
+    "start": "npx serve ."
+  },
+  "keywords": ["disaster-response", "emergency", "multi-agent-ai", "gis", "rakshai"],
+  "author": "RakshAI Team",
+  "license": "MIT"
+}
