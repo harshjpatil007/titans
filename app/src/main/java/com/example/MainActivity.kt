@@ -101,11 +101,19 @@ class MainActivity : ComponentActivity() {
                                 userLocationName = userLocationName,
                                 userLat = userLat,
                                 userLng = userLng,
+                                safePlaces = safePlaces,
+                                emergencyVehicles = emergencyVehicles,
                                 isSimulating = isSimulating,
                                 simulationProgress = simulationProgress,
                                 language = language,
                                 onRunSimulationClick = { showSimulationDialog = true },
                                 onNavigateToTab = { viewModel.setSelectedTab(it) },
+                                onSelectSafePlaceAndNavigate = { place ->
+                                    viewModel.startNavigation(place)
+                                },
+                                onSelectVehicle = { vehicle ->
+                                    viewModel.selectVehicle(vehicle)
+                                },
                                 onDispatchRecommendation = { viewModel.dispatchRecommendation(it) }
                             )
                             1 -> MapScreen(

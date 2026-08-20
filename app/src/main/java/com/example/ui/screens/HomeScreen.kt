@@ -42,11 +42,15 @@ fun HomeScreen(
     userLocationName: String,
     userLat: Double,
     userLng: Double,
+    safePlaces: List<SafePlace> = emptyList(),
+    emergencyVehicles: List<EmergencyVehicle> = emptyList(),
     isSimulating: Boolean,
     simulationProgress: Float,
     language: Language,
     onRunSimulationClick: () -> Unit,
     onNavigateToTab: (Int) -> Unit,
+    onSelectSafePlaceAndNavigate: (SafePlace) -> Unit = {},
+    onSelectVehicle: (EmergencyVehicle) -> Unit = {},
     onDispatchRecommendation: (String) -> Unit
 ) {
     val scenarioTitle = when (language) {
@@ -93,6 +97,34 @@ fun HomeScreen(
                     iconColor = GeoRedCritical,
                     label = LocalizationProvider.get("hazard_dist", language),
                     value = "%.1f km".format(nearestHazardDistanceKm)
+                )
+            }
+        }
+
+        // 2b. Live Safe Haven Evacuation Quick Access Card
+        if (safePlaces.isNotEmpty()) {
+            item {
+                HomeSafeHavensCard(
+                    safePlaces = safePlaces,
+                    language = language,
+                    onNavigateToSafePlace = { safePlace ->
+                        onSelectSafePlaceAndNavigate(safePlace)
+                        onNavigateToTab(1)
+                    }
+                )
+            }
+        }
+
+        // 2c. Live CityLink & 108 Emergency Transit Fleet Card
+        if (emergencyVehicles.isNotEmpty()) {
+            item {
+                HomeEmergencyTransitCard(
+                    vehicles = emergencyVehicles,
+                    language = language,
+                    onSelectVehicle = { vehicle ->
+                        onSelectVehicle(vehicle)
+                        onNavigateToTab(1)
+                    }
                 )
             }
         }
@@ -637,6 +669,283 @@ private fun MiniMetricPill(label: String, value: String) {
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                 color = GeoTextSecondary.copy(alpha = 0.7f)
             )
+        }
+    }
+}
+
+@Composable
+private fun HomeSafeHavensCard(
+    safePlaces: List<SafePlace>,
+    language: Language,
+    onNavigateToSafePlace: (SafePlace) -> Unit
+) {
+    val topShelters = safePlaces.take(3)
+    val cardTitle = when (language) {
+        Language.HINDI -> "सुरक्षित आश्रय स्थल और निकास केंद्र"
+        Language.MARATHI -> "सुरक्षित मदत छावण्या आणि निवारे"
+        Language.ENGLISH -> "Safe Havens & High Ground Shelters"
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, GeoBorder)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(GeoGreenContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Shield,
+                            contentDescription = null,
+                            tint = GeoGreenDark,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Text(
+                        text = cardTitle,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = GeoTextPrimary
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = GeoGreenLight
+                ) {
+                    Text(
+                        text = "${safePlaces.size} ACTIVE",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp,
+                            color = GeoGreenDark
+                        ),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                topShelters.forEach { place ->
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = GeoBackground,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GeoBorder),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToSafePlace(place) }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = place.name,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = GeoTextPrimary
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.padding(top = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "${place.safeZoneElevationMeters}m Elevation",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GeoGreenDark
+                                    )
+                                    Text(
+                                        text = "•",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GeoTextSecondary
+                                    )
+                                    Text(
+                                        text = "${place.availableBeds}/${place.capacityBeds} capacity",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GeoTextSecondary
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { onNavigateToSafePlace(place) },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = GeoGreenPrimary),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.DirectionsWalk,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Text(
+                                        text = LocalizationProvider.get("navigate", language),
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp
+                                        ),
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeEmergencyTransitCard(
+    vehicles: List<EmergencyVehicle>,
+    language: Language,
+    onSelectVehicle: (EmergencyVehicle) -> Unit
+) {
+    val cardTitle = when (language) {
+        Language.HINDI -> "सिटीलिंक बस और 108 एम्बुलेंस ट्रैकिंग"
+        Language.MARATHI -> "सिटीलिंक बस आणि १०८ रुग्णवाहिका ट्रॅकिंग"
+        Language.ENGLISH -> "CityLink Bus & 108 Ambulance Radar"
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = Color.White,
+        border = androidx.compose.foundation.BorderStroke(1.dp, GeoBorder)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(GeoSurfaceMuted),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.DirectionsBus,
+                            contentDescription = null,
+                            tint = GeoTextPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Text(
+                        text = cardTitle,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = GeoTextPrimary
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = GeoRedContainer
+                ) {
+                    Text(
+                        text = "${vehicles.size} IN SECTOR",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp,
+                            color = GeoRedText
+                        ),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                vehicles.take(3).forEach { vehicle ->
+                    val isBus = vehicle.type == VehicleType.CITYLINK_BUS
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = GeoBackground,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GeoBorder),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelectVehicle(vehicle) }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(28.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isBus) GeoGreenPrimary else GeoRedCritical),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (isBus) Icons.Filled.DirectionsBus else Icons.Filled.LocalHospital,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Text(
+                                        text = "${vehicle.vehicleNumber} • ${vehicle.routeName}",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                        color = GeoTextPrimary
+                                    )
+                                    Text(
+                                        text = if (isBus) "${vehicle.availableSeats} seats • ${vehicle.speedKmH} km/h" else "Active Paramedic Unit",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = GeoTextSecondary
+                                    )
+                                }
+                            }
+
+                            Icon(
+                                imageVector = Icons.Filled.ChevronRight,
+                                contentDescription = "View on Map",
+                                tint = GeoTextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
