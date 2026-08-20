@@ -258,19 +258,27 @@ class RakshAIViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun launchExternalGoogleMaps(context: Context, destLat: Double, destLng: Double, name: String) {
+        val originLat = _userLat.value
+        val originLng = _userLng.value
+        val mapsUrl = "https://www.google.com/maps/dir/?api=1&origin=$originLat,$originLng&destination=$destLat,$destLng&travelmode=driving"
         try {
-            val uri = Uri.parse("google.navigation:q=$destLat,$destLng&mode=w")
-            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(mapsUrl)).apply {
                 setPackage("com.google.android.apps.maps")
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            val fallbackUri = Uri.parse("geo:$destLat,$destLng?q=$destLat,$destLng($name)")
-            val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            try {
+                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(mapsUrl)).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(browserIntent)
+            } catch (ex: Exception) {
+                val geoIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$destLat,$destLng?q=$destLat,$destLng($name)")).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(geoIntent)
             }
-            context.startActivity(fallbackIntent)
         }
     }
 
